@@ -1,0 +1,106 @@
+---
+title: "Predicting the Probability that a Horse Wins a Race in Hong Kong"
+author: "Matthew Lewis"
+date: "3/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import Data
+
+```{r}
+races <- read.csv("races.csv")
+runs <- read.csv("runs.csv")
+```
+
+
+## Data Cleaning and Exploration
+
+```{r}
+# cleaning races
+races$race_no < as.factor(races$race_no)
+races$surface <- as.factor(races$surface)
+
+# cleaning runs
+library(dplyr)
+runs <- runs %>% select(won, everything()) # move response variable to front
+runs$won <- as.factor(runs$won) # this is our response variable
+
+runs$trainer_id <- as.factor(runs$trainer_id)
+runs$jockey_id <- as.factor(runs$jockey_id)
+```
+
+```{r}
+str(races)
+str(runs)
+```
+
+```{r}
+summary(races)
+summary(runs)
+```
+
+
+## Linear and Logistic Regression Models
+
+### Linear Regression
+```{r}
+linear1 <- lm(won ~ horse_age + horse_country + horse_type + horse_rating + horse_gear + declared_weight + draw + place_odds + trainer_id + jockey_id, data = runs )
+summary(linear1)
+```
+
+### Logistic Regression
+```{r}
+logistic1 <- glm(won ~ horse_age + horse_country + horse_type + horse_rating + horse_gear + declared_weigh + draw + place_odds + trainer_id + jockey_id, data = runs, family = "binomial")
+summary(logistic1)
+```
+
+
+## Predictive Models
+
+### Normalize Data
+
+```{r}
+# normalizing data for runs
+runs_norm <- as.data.frame(model.matrix(~.-1, runs))
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+runs_norm <- as.data.frame(lapply(runs_norm[1:37], normalize))
+
+# normalizing data for races
+races_norm <- as.data.frame(model.matrix(~.-1, races))
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+runs_norm <- as.data.frame(lapply(races_norm[1:37], normalize))
+```
+
+### kNN
+
+```{r}
+
+```
+
+### SVM
+
+```{r}
+
+```
+
+# ANN
+
+```{r}
+
+```
+
+
+## Conclusion
+
+**Conclusion**
+
