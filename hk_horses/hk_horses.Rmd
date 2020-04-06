@@ -9,52 +9,110 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+--
 ## Import Data
 
 ```{r}
-races <- read.csv("races.csv")
-runs <- read.csv("runs.csv")
+# races <- read.csv("races.csv")
+# runs <- read.csv("runs.csv")
 ```
 
-
+--
 ## Data Cleaning and Exploration
 
 ```{r}
 # cleaning races
-races$race_no < as.factor(races$race_no)
-races$surface <- as.factor(races$surface)
+# races$race_no < as.factor(races$race_no)
+# races$surface <- as.factor(races$surface)
 
 # cleaning runs
-library(dplyr)
-runs <- runs %>% select(won, everything()) # move response variable to front
-runs$won <- as.factor(runs$won) # this is our response variable
+# library(dplyr)
+# runs <- runs %>% select(won, everything()) # move response variable to front
+# runs$won <- as.factor(runs$won) # this is our response variable
 
-runs$trainer_id <- as.factor(runs$trainer_id)
-runs$jockey_id <- as.factor(runs$jockey_id)
+# runs$trainer_id <- as.factor(runs$trainer_id)
+# runs$jockey_id <- as.factor(runs$jockey_id)
 ```
 
 ```{r}
-str(races)
-str(runs)
+# str(races)
+# str(runs)
 ```
 
 ```{r}
-summary(races)
-summary(runs)
+# summary(races)
+# summary(runs)
 ```
 
-
-## Linear and Logistic Regression Models
-
-### Linear Regression
 ```{r}
-linear1 <- lm(won ~ horse_age + horse_country + horse_type + horse_rating + horse_gear + declared_weight + draw + place_odds + trainer_id + jockey_id, data = runs )
-summary(linear1)
+# combine data frames
+# hk <- merge(runs, races, by.x = "race_id", by.y = "race_id")
 ```
+
+```{r}
+# write.csv(hk,file="/Users/mlewis/Desktop/School/Winter 2020/TO 414/Project 3/hk.csv", row.names = FALSE)
+```
+
+```{r}
+hk <- read.csv("hk.csv")
+```
+
+```{r}
+hk$won <- as.factor(hk$won) # this is our response variable
+
+hk$position_sec5 <- NULL
+hk$position_sec6 <- NULL
+
+hk$behind_sec5 <- NULL
+hk$behind_sec6 <- NULL
+
+hk$time5.x <- NULL
+hk$time6.x <- NULL
+
+hk$sec_time5 <- NULL
+hk$sec_time6 <- NULL
+hk$sec_time7 <- NULL
+
+hk$time5.y <- NULL
+hk$time6.y <- NULL
+
+hk$time7 <- NULL
+
+hk$place_combination4 <- NULL
+
+hk$place_dividend4 <- NULL
+
+hk$win_combination2 <- NULL
+hk$win_dividend2 <- NULL
+```
+
+```{r}
+str(hk)
+summary(hk)
+```
+
+```{r}
+hv <- hk[hk$venue == "HV",]
+```
+
+```{r}
+str(hv)
+summary(hv)
+```
+
+--
+## Data Visualization
+
+```{r}
+
+```
+
+--
+## Logistic Regression Models
 
 ### Logistic Regression
 ```{r}
-logistic1 <- glm(won ~ horse_age + horse_country + horse_type + horse_rating + horse_gear + declared_weigh + draw + place_odds + trainer_id + jockey_id, data = runs, family = "binomial")
+logistic1 <- glm(won ~ horse_age + horse_country + horse_type + horse_rating + horse_gear + declared_weigh + draw + place_odds + trainer_id + jockey_id, data = hk, family = "binomial")
 summary(logistic1)
 ```
 
@@ -64,21 +122,8 @@ summary(logistic1)
 ### Normalize Data
 
 ```{r}
-# normalizing data for runs
-runs_norm <- as.data.frame(model.matrix(~.-1, runs))
+# normalizing data for HK
 
-normalize <- function(x) {
-  return ((x - min(x)) / (max(x) - min(x)))
-}
-runs_norm <- as.data.frame(lapply(runs_norm[1:37], normalize))
-
-# normalizing data for races
-races_norm <- as.data.frame(model.matrix(~.-1, races))
-
-normalize <- function(x) {
-  return ((x - min(x)) / (max(x) - min(x)))
-}
-runs_norm <- as.data.frame(lapply(races_norm[1:37], normalize))
 ```
 
 ### kNN
