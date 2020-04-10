@@ -1,0 +1,272 @@
+---
+title: "Predicting the Probability that a Horse Wins a Race in Hong Kong"
+author: "Matthew Lewis"
+date: "4/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+--
+## Import Data
+
+```{r}
+# races <- read.csv("races.csv")
+# runs <- read.csv("runs.csv")
+```
+
+--
+## Data Cleaning and Exploration
+
+```{r}
+# cleaning races
+# races$race_no < as.factor(races$race_no)
+# races$surface <- as.factor(races$surface)
+
+# cleaning runs
+# library(dplyr)
+# runs <- runs %>% select(won, everything()) # move response variable to front
+# runs$won <- as.factor(runs$won) # this is our response variable
+
+# runs$trainer_id <- as.factor(runs$trainer_id)
+# runs$jockey_id <- as.factor(runs$jockey_id)
+```
+
+```{r}
+# str(races)
+# str(runs)
+```
+
+```{r}
+# summary(races)
+# summary(runs)
+```
+
+```{r}
+# combine data frames
+# hk <- merge(runs, races, by.x = "race_id", by.y = "race_id")
+```
+
+```{r}
+# write.csv(hk,file="/Users/mlewis/Desktop/School/Winter 2020/TO 414/Project 3/hk.csv", row.names = FALSE)
+```
+
+```{r}
+hk <- read.csv("hk.csv")
+```
+
+```{r}
+hk$won <- as.logical(hk$won) # this is our response variable
+
+hk$position_sec5 <- NULL
+hk$position_sec6 <- NULL
+
+hk$behind_sec5 <- NULL
+hk$behind_sec6 <- NULL
+
+hk$time5.x <- NULL
+hk$time6.x <- NULL
+
+hk$sec_time5 <- NULL
+hk$sec_time6 <- NULL
+hk$sec_time7 <- NULL
+
+hk$time5.y <- NULL
+hk$time6.y <- NULL
+
+hk$time7 <- NULL
+
+hk$place_combination4 <- NULL
+
+hk$place_dividend4 <- NULL
+
+hk$win_combination2 <- NULL
+hk$win_dividend2 <- NULL
+
+hk$horse_gear<-NULL
+hk$position_sec4<-NULL
+hk$behind_sec4<-NULL
+hk$time4.x<-NULL
+hk$time4.y<-NULL
+hk$sec_time4<-NULL
+hk$place_dividend3<-NULL
+hk$place_combination3<-NULL
+
+hk$horse_ratings[is.na(hk$horse_ratings)] <- mean(hk$horse_ratings, na.rm = TRUE)
+hk$place_odds[is.na(hk$place_odds)] <- mean(hk$place_odds, na.rm = TRUE)
+hk$prize[is.na(hk$prize)] <- mean(hk$prize, na.rm = TRUE)
+```
+
+```{r}
+hk$horse_country<-ifelse(hk$horse_country=="AUS",0,
+                         ifelse(hk$horse_country=="NZ",1,
+                                ifelse(hk$horse_country=="IRE",2,
+                                       ifelse(hk$horse_country=="GB",3,
+                                              ifelse(hk$horse_country=="USA",4,5)))))
+hk$horse_type<-ifelse(hk$horse_type=="Gelding",0,1)
+hk$venue<-as.numeric(hk$venue)
+hk$config<-ifelse(hk$config=="A",0,
+                  ifelse(hk$config=="A+3",1,
+                         ifelse(hk$config=="B",2,
+                                ifelse(hk$config=="B+2",3,
+                                       ifelse(hk$config=="C",4,5)))))
+hk$going<-ifelse(hk$going=="FAST",0,
+                 ifelse(hk$going=="GOOD",1,
+                        ifelse(hk$going=="GOOD TO FIRM",2,
+                               ifelse(hk$going=="GOOD TO YIELDING",3,
+                                      ifelse(hk$going=="SLOW",4,
+                                             ifelse(hk$going=="SOFT",5,
+                                                    ifelse(hk$going=="WET FAST",6,
+                                                           ifelse(hk$going=="WET SLOW",7,
+                                                                  ifelse(hk$going=="YIELDING",8,9)))))))))
+```
+
+```{r}
+library(lubridate)
+hk$date<-ymd(hk$date)
+hk$day<-wday(hk$date)
+```
+
+```{r}
+str(hk)
+summary(hk)
+```
+
+```{r}
+hv <- hk[hk$venue == "HV",]
+```
+
+```{r}
+str(hv)
+summary(hv)
+```
+
+--
+## Data Visualization
+
+```{r}
+library(ggplot2)
+
+type_plot <- ggplot(data = hv, aes(x = lengths_behind, y = result))
+type_plot + geom_jitter(alpha = 1)
+```
+
+```{r}
+plot(x = hv$actual_weight, y = hv$result, main = "Result vs. Weight", xlab = "Weight",  ylab = "Result")
+
+result_weight <- round(sort(tapply(hv$result, hv$actual_weight, mean, na.rm = TRUE), TRUE), 3)
+as.matrix(result_weight)
+```
+
+```{r}
+plot(x = hv$position_sec1, y = hv$result, main = "Result vs. Start", xlab = "Start",  ylab = "Result")
+
+result_start <- round(sort(tapply(hv$result, hv$position_sec1, mean, na.rm = TRUE), TRUE), 3)
+as.matrix(result_start)
+```
+
+```{r}
+age_won <- table(hv$horse_age, hv$won)
+age_won
+plot(age_won) # 4 year old horses tend to win more on average than other ages
+
+pos1_won <- table(hv$position_sec1, hv$won)
+pos1_won
+plot(pos1_won) # horses in the lead at first tend to win most races
+
+pos2_won <- table(hv$position_sec2, hv$won)
+pos2_won
+plot(pos2_won)
+
+pos3_won <- table(hv$position_sec3, hv$won)
+pos3_won
+plot(pos3_won) # by the third turn, there is a greater than 50% chance that the lead horse wins the race
+
+country_won <- table(hv$horse_country, hv$won)
+country_won
+plot(country_won) # Argentinian and South African horses tend to win a higher percentage of races than other countries
+```
+
+
+--
+## Logistic Regression Models
+
+### Logistic Regression
+```{r}
+logistic1 <- glm(won ~ place_odds + position_sec1 + position_sec2 + position_sec3 + position_sec4 + distance, data = hv, family = "binomial")
+summary(logistic1)
+```
+
+
+## Predictive Models
+
+### Normalize and Structure Data
+```{r}
+# imputation
+```
+
+```{r}
+# randomizing data
+set.seed(17)
+r_hk <- hk[sample(nrow(hk)),]
+```
+
+```{r}
+# normalizing data
+r_hk_norm <- as.data.frame(model.matrix(~.-1, r_hk))
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+r_hk_norm <- as.data.frame(lapply(r_hk_norm[1:50], normalize))
+```
+
+```{r}
+table(r_hv_norm$won) # < table of extent 0 >
+```
+
+```{r}
+# separate data into test and train
+train_x <- r_hk_norm[1:60000, -ncol(r_hk_norm)]
+test_x <- r_hk_norm[60001:79447, -ncol(r_hk_norm)]
+train_y <- r_hk_norm[1:60000, ncol(r_hk_norm)]
+test_y <- r_hk_norm[60001:79447, ncol(r_hk_norm)]
+
+alpha_train <- r_hk_norm[1:60000, ]
+alpha_test <- r_hk_norm[60001:79447, ]
+```
+
+### kNN
+
+```{r}
+library(class)
+r_hk_norm_pred <- knn(train = train_x, test = test_x, cl = train_y, k = 7) # no missing values are allowed
+library(gmodels)
+CrossTable(x = test_y, y = r_hk_norm_pred, prop.chisq = FALSE)
+```
+
+```{r}
+library(caret)
+confusionMatrix(factor(r_hk_norm_pred), factor(test_y))
+```
+
+### SVM
+
+```{r}
+
+```
+
+# ANN
+
+```{r}
+
+```
+
+
+## Conclusion
+
+**Conclusion**
+
