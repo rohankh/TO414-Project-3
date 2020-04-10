@@ -1,0 +1,314 @@
+---
+title: "Predicting the Probability that a Horse Wins a Race in Hong Kong"
+author: "Matthew Lewis"
+date: "3/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+--
+## Import Data
+
+```{r}
+# races <- read.csv("races.csv")
+# runs <- read.csv("runs.csv")
+```
+
+--
+## Data Cleaning and Exploration
+
+```{r}
+# cleaning races
+# races$race_no < as.factor(races$race_no)
+# races$surface <- as.factor(races$surface)
+
+# cleaning runs
+# library(dplyr)
+# runs <- runs %>% select(won, everything()) # move response variable to front
+# runs$won <- as.factor(runs$won) # this is our response variable
+
+# runs$trainer_id <- as.factor(runs$trainer_id)
+# runs$jockey_id <- as.factor(runs$jockey_id)
+```
+
+```{r}
+# str(races)
+# str(runs)
+```
+
+```{r}
+# summary(races)
+# summary(runs)
+```
+
+```{r}
+# combine data frames
+# hk <- merge(runs, races, by.x = "race_id", by.y = "race_id")
+```
+
+```{r}
+# write.csv(hk,file="/Users/mlewis/Desktop/School/Winter 2020/TO 414/Project 3/hk.csv", row.names = FALSE)
+```
+
+```{r}
+hk <- read.csv("hk.csv")
+```
+
+
+Deleting columns which proved to be insignificant.
+```{r}
+hk$won <- as.factor(hk$won) # this is our response variable
+
+hk$position_sec5 <- NULL
+hk$position_sec6 <- NULL
+
+hk$behind_sec5 <- NULL
+hk$behind_sec6 <- NULL
+
+hk$time5.x <- NULL
+hk$time6.x <- NULL
+
+hk$sec_time5 <- NULL
+hk$sec_time6 <- NULL
+hk$sec_time7 <- NULL
+
+hk$time5.y <- NULL
+hk$time6.y <- NULL
+
+hk$time7 <- NULL
+
+hk$place_combination4 <- NULL
+
+hk$place_dividend4 <- NULL
+
+hk$win_combination2 <- NULL
+hk$win_dividend2 <- NULL
+hk$horse_gear<-NULL
+hk$position_sec4<-NULL
+hk$behind_sec4<-NULL
+hk$time4.x<-NULL
+hk$time4.y<-NULL
+hk$sec_time4<-NULL
+hk$place_dividend3<-NULL
+hk$place_combination3<-NULL
+
+
+```
+
+```{r}
+hk$horse_ratings<-NULL #I dont really know what to do with that column. Maybe to calculte an averages, but how?
+```
+
+
+Overall structure. 
+
+```{r}
+str(hk)
+```
+
+
+Its useful to see how many values are missing in each column. It will also help us to make a decision which columns are insignificant. 
+
+```{r}
+sapply(hk, function(x) sum(is.na(x)))
+```
+
+Useful information can give us how many unique value there are in each column. 
+From here we can see there are 6348 races overall. 4405 horses and 186 jockeys competed against each other overall. 
+
+```{r}
+sapply(hk, function(x) length(unique(x)))
+```
+
+```{r}
+table(hk$horse_country)
+table(hk$horse_type)
+table(hk$going)
+table(hk$horse_ratings)
+table(hk$config)
+
+```
+
+
+The next step is to turn as many factors as possible to numeric values. The majority of horses are coming from 4 countries: Australia, New Zeland,Great Britain and USA. So we turned them into the dummy variables and combined other countries into one variable. 
+
+Most of the horses are Gelding type so we combined all other horse types into one value. 
+
+There are 2 tracks represented in the dataset and 6 configurations of the tracks. Since each type represented equally we turned them into its own dummy value. Additional info regarding tracks and its configuration can be found at https://racing.hkjc.com/racing/english/racing-info/racing_course.asp
+
+The condition is also a very important factor on whether the horse is going to win or not. 
+  
+
+```{r}
+hk$horse_country<-ifelse(hk$horse_country=="AUS",0,
+                         ifelse(hk$horse_country=="NZ",1,
+                                ifelse(hk$horse_country=="IRE",2,
+                                       ifelse(hk$horse_country=="GB",3,
+                                              ifelse(hk$horse_country=="USA",4,5)))))
+
+hk$horse_type<-ifelse(hk$horse_type=="Gelding",0,1)
+
+hk$venue<-as.numeric(hk$venue)
+
+hk$config<-ifelse(hk$config=="A",0,
+                  ifelse(hk$config=="A+3",1,
+                         ifelse(hk$config=="B",2,
+                                ifelse(hk$config=="B+2",3,
+                                       ifelse(hk$config=="C",4,5)))))
+
+
+hk$going<-ifelse(hk$going=="FAST",0,
+                 ifelse(hk$going=="GOOD",1,
+                        ifelse(hk$going=="GOOD TO FIRM",2,
+                               ifelse(hk$going=="GOOD TO YIELDING",3,
+                                      ifelse(hk$going=="SLOW",4,
+                                             ifelse(hk$going=="SOFT",5,
+                                                    ifelse(hk$going=="WET FAST",6,
+                                                           ifelse(hk$going=="WET SLOW",7,
+                                                                  ifelse(hk$going=="YIELDING",8,9)))))))))
+
+```
+
+Since the data is a factor in our dataset, we turned it into data type and calculated which day of the week represents each date. 
+
+
+```{r}
+library(lubridate)
+hk$date<-ymd(hk$date)
+hk$day<-wday(hk$date)
+```
+
+Since we have some missing values in prize column it might be appropriate to remove them with average value.
+```{r}
+length(which(hk$prize==800000))
+hk$prize[is.na(hk$prize)]<-round(mean(hk$prize,na.rm=T))
+```
+
+
+
+```{r}
+str(hk)
+```
+
+
+```{r}
+table(is.na(hk))
+sum(is.na(hk))
+```
+
+
+Average of place_odds but prof told us to keep the NA's in that case.
+
+```{r}
+hk$place_odds[is.na(hk$place_odds)]<-round(mean(hk$place_odds,na.rm=T))
+```
+
+
+
+
+
+
+#2 I also think we should get rid of horse ratings? Its just a range. Take a mid point of a range!
+
+```{r}
+
+
+```
+
+
+```{r}
+#levels(hk$horse_country)
+#levels(hk$horse_type)
+```
+
+Can I convert venue to numeric?
+```{r}
+#hk1=hk %>% sample_frac(.1)
+
+```
+
+
+```{r}
+str(hk)
+summary(hk)
+```
+
+--
+## Data Visualization
+
+
+
+--
+## Logistic Regression Models
+
+```{r}
+logistic0<-glm(won~.,data=hk,family = "binomial")
+summary(logistic0)
+```
+
+
+### Logistic Regression. 
+```{r}
+logistic1 <- glm(won ~ horse_age + horse_country + horse_type + horse_rating + declared_weight + draw + place_odds + trainer_id + jockey_id, data = hk, family = "binomial")
+summary(logistic1)
+```
+## Predictive Models
+
+### Normalize Data
+
+```{r}
+# normalizing data for HK
+
+```
+
+### kNN
+
+```{r}
+set.seed(17)
+r_hk <- hk[sample(nrow(hk)),]
+```
+
+
+
+```{r}
+r_hk_norm <- as.data.frame(model.matrix(~.-1, r_hk))
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+r_hk_norm <- as.data.frame(lapply(r_hk_norm[1:50], normalize))
+```
+
+
+
+```{r}
+train_x <- r_hk_norm[1:22000, -ncol(r_hk_norm)]
+test_x <- r_hk_norm[22001:27501, -ncol(r_hk_norm)]
+train_y <- r_hk_norm[1:22000, ncol(r_hk_norm)]
+test_y <- r_hk_norm[22001:27501, ncol(r_hk_norm)]
+
+alpha_train <- r_hk_norm[1:22000, ]
+alpha_test <- r_hk_norm[22001:27501, ]
+```
+
+
+```{r}
+library(class)
+r_hk_norm_pred <- knn(train = train_x, test = test_x, cl = train_y, k = 7) # no missing values are allowed
+library(gmodels)
+CrossTable(x = test_y, y = r_hk_norm_pred, prop.chisq = FALSE)
+```
+
+
+
+
+
+
+## Conclusion
+
+**Conclusion**
+
